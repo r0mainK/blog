@@ -15,6 +15,7 @@ header_pages:
 
 exclude:
   - README.md
+  - LICENSE
 
 show_excerpts: true
 
