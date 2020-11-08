@@ -1,0 +1,24 @@
+title: keramitas
+description: >-
+  AI and stuff
+author:
+  name: Romain Keramitas
+  email: "r.keramitas@gmail.com"
+url: "http://keramitas.io"
+baseurl: ""
+
+theme: minima
+
+header_pages:
+  - about.md
+  - contact.md
+
+exclude:
+  - README.md
+
+show_excerpts: true
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
