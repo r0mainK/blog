@@ -28,7 +28,7 @@ jobs:
             - vendor/bundle
       - run:
           name: Jekyll build
-          command: bundle exec jekyll build
+          command: JEKYLL_ENV=production bundle exec jekyll build
       - run:
           name: HTMLProofer tests
           command: |
@@ -41,7 +41,31 @@ jobs:
           root: ./
           paths:
             - _site
+
+  deploy:
+    docker:
+      - image: rohara/node:6.10.3-rsync
+    working_directory: ~/repo
+    steps:
+      - attach_workspace:
+          at: ./
+      - add_ssh_keys:
+          fingerprints:
+            - "2b:f8:56:ee:ba:2a:a6:2b:e3:9e:b8:65:8a:00:30:20"
+      - run: 
+          name: Add remote host to known hosts
+          command: echo $REMOTE_HOSTKEY >> ~/.ssh/known_hosts
+      - run:
+          name: Upload to host
+          command: rsync -avc -e ssh  --delete ./_site/ root@keramitas.io:/var/www/blog
+
 workflows:
   test-deploy:
     jobs:
       - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main
