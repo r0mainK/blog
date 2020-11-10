@@ -3,13 +3,13 @@ layout: post
 title: "Concise guide to efficient Python tooling"
 date: 2020-11-09
 ---
-Although I intend to mostly write about AI, for my first post I am simply going to share my current setup for coding in Python. Tooling and "good practises" is a pretty contentious topic so I don't expect you, dear reader, to agree with everything I'll be covering - hell, I might even disagree with this in a couple years time. However, I strongly believe that the following makes coding Python much easier so if you haven't thought out much of your tooling then this post might be of interest to you - and even if you have, I'll welcome any criticism or recommendations 👌
+Although I intend to mostly write about AI, for my first post I am simply going to share my current setup for coding in Python. Tooling and "good practices" is a pretty contentious topic so I don't expect you, dear reader, to agree with everything I'll be covering - hell, I might even disagree with this in a couple years' time. However, I strongly believe that the following makes coding Python much easier so if you haven't thought out much of your tooling then this post might be of interest to you - and even if you have, I'll welcome any criticism or recommendations 👌
 
 Anyway, let's get into it !
 
 ## Editor
 
-I've been using [VSCode](https://code.visualstudio.com/) for a while now, and honestly if you haven't I recommend you try it out. The UX is really great, as are the numerous extensions and features you can use. It might not be Python specific, but I did not find any feature to be lacking when compared to other IDEs like Pycharm or Spyder. In the rest of the post, I'll assume you are using VSCode - that way I can show you how to integrate the other tools directly, using the `.vscode/settings.json` file in your project. Once you've got it installed, go ahead and choose a theme, then install Microsoft's Python extension right away. Incidentally, if you don't want Microsoft to gather your data, then you should add the following to your global settings file:
+I've been using [VSCode](https://code.visualstudio.com/) for a while now, and honestly if you haven't I recommend you try it out. The UX is really great, as are the numerous extensions and features you can use. It might not be Python-specific, but I did not find any feature to be lacking when compared to other IDEs like Pycharm or Spyder. In the rest of the post, I'll assume you are using VSCode - that way I can show you how to integrate the other tools directly, using the `.vscode/settings.json` file in your project. Once you've got it installed, go ahead and choose a theme, then install Microsoft's Python extension right away. Incidentally, if you don't want Microsoft to gather your data, then you should add the following to your global settings file:
 
 ```json
 {
@@ -28,9 +28,9 @@ I would also recommend setting the following option, as I've had some issues wit
 
 ## Dependency management
 
-At this point, I've been working with [Poetry](https://python-poetry.org/) somewhat reluctantly at work. While it does get the job done (better then pipenv or conda at least), I feel it's overkill in most cases, and with the increased usage of containers it can be cumbersome to use. Anyway, in my opinion try and keep control over dependency management while you still can using the built-in `venv`, and switch to Poetry only if you must.
+At this point, I've been working with [Poetry](https://python-poetry.org/) somewhat reluctantly at work. While it does get the job done (better than pipenv or conda at least), I feel it's overkill in most cases, and with the increased usage of containers, it can be cumbersome to use. Anyway, in my opinion try and keep control over dependency management while you still can using the built-in `venv`, and switch to Poetry only if you must.
 
-In order to keep everything clean, I like to do this the following way. Asssuming you are at the root directory of your project run:
+To keep everything clean, I like to do this the following way. Assuming you are at the root directory of your project run:
 
 ```
 python3 -m venv .env
@@ -58,7 +58,7 @@ Then, add the following items your config file:
 
 With this, VSCode will know which Python executable should be used, and it won't show or check out files in that directory. I also added files that may be created by Python when running your code, to avoid clutter. 
 
-Finally, I recommend you split all dependencies in two files: `requirements.txt` and `requirements-dev.txt`. The former should contain packages the project depends upon, while the latter should be used for any packages used for development, like testing frameworks, or the tools I'm about to describe. As mentionned earlier, doing things this way means you'll be responsible for dependency management, so when adding anything you should either pin the version, or at least specify major upper and lower limits, e.g.:
+Finally, I recommend you split all dependencies in two files: `requirements.txt` and `requirements-dev.txt`. The former should contain packages the project depends upon, while the latter should be used for any packages used for development, like testing frameworks, or the tools I'm about to describe. As mentioned earlier, doing things this way means you'll be responsible for dependency management, so when adding anything you should either pin the version, or at least specify major upper and lower limits, e.g.:
 
 ```
 torch >=1.6,<1.7
@@ -68,7 +68,7 @@ The issue with this is well known: nested dependencies are not pinned, which wil
 
 ## Version Control
 
-Not much to say here, if you don't use `git` yet you should stop and go check it out (get it ?), then start using it in all of your projects. There are a ton of ressources online to help you get the hang of it, I personally like [this lecture](https://missing.csail.mit.edu/2020/version-control/) of the notorious missing semester course from MIT (in fact you should study the whole course if you've got the time). By the way, you should be adding to your `.gitignore` file the file patterns / directories mentionned earlier, to avoid commiting temporary files or any other trash by mistake. Additionaly, if you don't like using the command line, notice you can use VSCode to do most of the operations.
+Not much to say here, if you don't use `git` yet you should stop and go check it out (get it ?), then start using it in all of your projects. There are a ton of resources online to help you get the hang of it, I personally like [this lecture](https://missing.csail.mit.edu/2020/version-control/) of the notorious missing semester course from MIT (in fact you should study the whole course if you've got the time). By the way, you should be adding to your `.gitignore` file the file patterns / directories mentioned earlier, to avoid committing temporary files or any other trash by mistake. Additionally, if you don't like using the command line, notice you can use VSCode to do most of the operations.
 
 ## Formatting
 
@@ -90,7 +90,7 @@ As you can see I specify a different line length then the default (88), but apar
 
 ## Sorting imports
 
-Here this is really about preference, I recommend you make up your mind by checking out [this repo](https://github.com/PyCQA/flake8-import-order) - and stick to it by using [isort](https://github.com/PyCQA/isort) to order imports on save. I personally like the appnexus style, with the additional constraint of keeping only one import per line for clarity. If you want to try it out, here is how to do it:
+Here this is really about preference, I recommend you make up your mind by checking out [this repo](https://github.com/PyCQA/flake8-import-order) - and stick to it by using [isort](https://github.com/PyCQA/isort) to order imports on save. I like the appnexus style, with the additional constraint of keeping only one import per line for clarity. If you want to try it out, here is how to do it:
 
 ```json
 {
@@ -111,7 +111,7 @@ Here this is really about preference, I recommend you make up your mind by check
 
 ## Linting
 
-Again, this somewhat comes down to preferences, but I've been using [flake8](https://flake8.pycqa.org/en/latest/) for a while now and have come to grow fond of it. Especially, the fact you can add extensions to it pretty easily has motivated open-source developpers to create [a ton](https://github.com/DmytroLitvinov/awesome-flake8-extensions) of them. I personally use [bugbear](https://github.com/PyCQA/flake8-bugbear), [import-order](https://github.com/PyCQA/flake8-import-order) (that I mentionned earlier), [quotes](https://github.com/zheller/flake8-quotes), [builtins](https://github.com/gforcada/flake8-builtins) and I've just discovered [use-fstring](https://github.com/MichaelKim0407/flake8-use-fstring) which I'll definitely be using from here on out 🤩
+Again, this somewhat comes down to preferences, but I've been using [flake8](https://flake8.pycqa.org/en/latest/) for a while now and have come to grow fond of it. Especially, the fact you can add extensions to it pretty easily has motivated open-source developers to create [a ton](https://github.com/DmytroLitvinov/awesome-flake8-extensions) of them. I personally use [bugbear](https://github.com/PyCQA/flake8-bugbear), [import-order](https://github.com/PyCQA/flake8-import-order) (that I mentioned earlier), [quotes](https://github.com/zheller/flake8-quotes), [builtins](https://github.com/gforcada/flake8-builtins) and I've just discovered [use-fstring](https://github.com/MichaelKim0407/flake8-use-fstring) which I'll definitely be using from here on out 🤩
 
 To use all this, add the following to your configuration: 
 
@@ -131,7 +131,7 @@ To use all this, add the following to your configuration:
 }
 ```
 
-As you can see I'm using the `extend-ignore` option to disable error E731, "do not assign a lambda expression". This option is pretty useful if you have specific errors you wish to ignore for some reason. Whilst you shouldn't overuse this, rules should be broken if need be, especially in case of conclicts with other tools, like black for instance.
+As you can see I'm using the `extend-ignore` option to disable error E731, "do not assign a lambda expression". This option is pretty useful if you have specific errors you wish to ignore for some reason. Whilst you shouldn't overuse this, rules should be broken if need be, especially in case of conflicts with other tools, like black for instance.
 
 ## Documentation 
 
