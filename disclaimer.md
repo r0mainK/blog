@@ -4,4 +4,4 @@ title: Disclaimer
 permalink: /disclaimer/
 ---
 
-Standard disclaimer: This is my personal website and the opinions expressed here are mine alone, and do not represent my employer's views or opinions in any shape or form.
+This is my personal website and the opinions expressed here are mine alone, they do not represent my employer's views or opinions in any shape or form - so don't sue me 😬
