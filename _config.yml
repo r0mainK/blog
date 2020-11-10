@@ -20,6 +20,12 @@ exclude:
 show_excerpts: true
 
 plugins:
+  - jekyll-analytics
   - jekyll-feed
-  - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-sitemap
+
+jekyll_analytics:
+  Plausible:
+    domain: "keramitas.io"
+    source: "https://plausible.io/js/plausible.js"
