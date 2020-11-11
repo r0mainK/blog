@@ -18,17 +18,17 @@ I've been using [VSCode](https://code.visualstudio.com/) for a while now, and ho
 }
 ```
 
-I would also recommend setting the following option, as I've had some issues with the default language server Jedi:
+I would also recommend changing the language server to [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) after installing it via VSCode. I've had some issues with the default language server Jedi, and Pylance will eventually replace the old Microsoft server (it also has a lot of cool features like autocomplete, suggestions, etc.):
 
 ```json
 {
-    "python.languageServer": "Microsoft"
+    "python.languageServer": "Pylance"
 }
 ```
 
 ## Dependency management
 
-At this point, I've been working with [Poetry](https://python-poetry.org/) somewhat reluctantly at work. While it does get the job done (better than pipenv or conda at least), I feel it's overkill in most cases, and with the increased usage of containers, it can be cumbersome to use. Anyway, in my opinion try and keep control over dependency management while you still can using the built-in `venv`, and switch to Poetry only if you must.
+At this point, I've been working with [Poetry](https://python-poetry.org/) somewhat reluctantly at work. While it does get the job done (better than `pipenv` or`conda` at least), I feel it's overkill in most cases, and with the increased usage of containers, it can be cumbersome to use. Anyway, in my opinion try and keep control over dependency management while you still can using the built-in `venv`, and switch to Poetry only if you must.
 
 To keep everything clean, I like to do this the following way. Assuming you are at the root directory of your project run:
 
@@ -38,7 +38,7 @@ source .env/bin/activate
 pip install --upgrade pip
 ```
 
-Then, add the following items your config file:
+Then, add the following items to your configuration file:
 
 ```json
 {
@@ -56,7 +56,7 @@ Then, add the following items your config file:
 }
 ```
 
-With this, VSCode will know which Python executable should be used, and it won't show or check out files in that directory. I also added files that may be created by Python when running your code, to avoid clutter. 
+With this, VSCode will know which Python executable should be used, and it won't show or check out files in that directory. I also added files that may be created by Python when running your code, to avoid clutter.
 
 Finally, I recommend you split all dependencies in two files: `requirements.txt` and `requirements-dev.txt`. The former should contain packages the project depends upon, while the latter should be used for any packages used for development, like testing frameworks, or the tools I'm about to describe. As mentioned earlier, doing things this way means you'll be responsible for dependency management, so when adding anything you should either pin the version, or at least specify major upper and lower limits, e.g.:
 
@@ -77,7 +77,7 @@ You know what they say : [black](https://github.com/psf/black) is the new black.
 ```json
 {
     "editor.formatOnSave": true,
-    "editor.formatOnSaveTimeout": 10000,    
+    "python.formatting.provider": "black",
     "python.formatting.blackPath": ".env/bin/black",
     "python.formatting.blackArgs": [
         "--line-length",
@@ -86,11 +86,11 @@ You know what they say : [black](https://github.com/psf/black) is the new black.
 }
 ```
 
-As you can see I specify a different line length then the default (88), but apart from that no configuration is required, as that is the basic purpose of this tool. Setting the timeout to a higher value can be pretty useful if you have many files in your project.
+As you can see I specify a different line length then the default (88), but apart from that no configuration is required, as that is the basic purpose of this tool.
 
 ## Sorting imports
 
-Here this is really about preference, I recommend you make up your mind by checking out [this repo](https://github.com/PyCQA/flake8-import-order) - and stick to it by using [isort](https://github.com/PyCQA/isort) to order imports on save. I like the appnexus style, with the additional constraint of keeping only one import per line for clarity. If you want to try it out, here is how to do it:
+Here this is really about preference, I recommend you make up your mind by checking out [this repo](https://github.com/PyCQA/flake8-import-order) - and stick to it by using [isort](https://github.com/PyCQA/isort) to order imports on save. I like the `appnexus` style, with the additional constraint of keeping only one import per line for clarity. If you want to try it out, here is how to do it:
 
 ```json
 {
@@ -113,7 +113,7 @@ Here this is really about preference, I recommend you make up your mind by check
 
 Again, this somewhat comes down to preferences, but I've been using [flake8](https://flake8.pycqa.org/en/latest/) for a while now and have come to grow fond of it. Especially, the fact you can add extensions to it pretty easily has motivated open-source developers to create [a ton](https://github.com/DmytroLitvinov/awesome-flake8-extensions) of them. I personally use [bugbear](https://github.com/PyCQA/flake8-bugbear), [import-order](https://github.com/PyCQA/flake8-import-order) (that I mentioned earlier), [quotes](https://github.com/zheller/flake8-quotes), [builtins](https://github.com/gforcada/flake8-builtins) and I've just discovered [use-fstring](https://github.com/MichaelKim0407/flake8-use-fstring) which I'll definitely be using from here on out 🤩
 
-To use all this, add the following to your configuration: 
+To use all this, add the following to your VSCode configuration:
 
 ```json
 {
@@ -121,7 +121,26 @@ To use all this, add the following to your configuration:
     "python.linting.lintOnSave": true,
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
-    "python.linting.flake8Path": ".env/bin/flake8",
+    "python.linting.flake8Path": ".env/bin/flake8"
+}
+```
+
+In order to specify your `flake8` configuration, create a `.flake8` file at the root of your project, and add elements with the following syntax:
+
+```conf
+[flake8]
+extend-ignore = E731,E741
+max-line-length = 99
+import-order-style = appnexus
+inline-quotes = double
+```
+
+As you can see I'm using the `extend-ignore` option to disable error E731, "do not assign a lambda expression". This option is pretty useful if you have specific errors you wish to ignore for some reason. Whilst you shouldn't overuse this, rules should be broken if need be, especially in case of conflicts with other tools, like black for instance.
+
+You should note that while you can specify these settings directly to VSCode, like so:
+
+```json
+{
     "python.linting.flake8Args": [
         "--extend-ignore=E731",
         "--max-line-length=99",
@@ -131,9 +150,10 @@ To use all this, add the following to your configuration:
 }
 ```
 
-As you can see I'm using the `extend-ignore` option to disable error E731, "do not assign a lambda expression". This option is pretty useful if you have specific errors you wish to ignore for some reason. Whilst you shouldn't overuse this, rules should be broken if need be, especially in case of conflicts with other tools, like black for instance.
+This isn't optimal, as collaborators may not use VSCode, but still need easy access to the flake8 settings. The same could be said about formatting, but as black requires minimal configuration it isn't as big an issue.
 
-## Documentation 
+
+## Documentation
 
 I personally don't like in-code documentation, and think many people use documentation as a crutch to avoid naming variables precisely, e.g. this:
 
@@ -166,3 +186,5 @@ Now this is obviously a simple example, and you will sometimes need to document 
 That about wraps it, thanks for reading if you made it this far ! If you've set up the environment and tried applying it to your project, what are your thoughts ? Hit me up, I'll be glad to chat about it ! Also, share it if you want me (or this) to gain clout 😁
 
 Next up should be a post on embeddings, so if you fancy NLP, stay tuned ...
+
+**EDIT:** Thanks to `harylmu` and `jblasgo` from Reddit for the feedback on Pylance and linting configurations, I updated relevant sections to take it into account !
