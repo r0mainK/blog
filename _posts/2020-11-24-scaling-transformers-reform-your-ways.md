@@ -8,7 +8,7 @@ After showing you my Python setup in the previous post, I wanted to showcase it 
 
 ## Recommended reading
 
-I expect you, dear reader, to be somewhat interested in AI if you're still here. NLP may not be your cup of tea though, and since following research trends requires time, you may also no be up to date. If that is the case, I would recommend you grab some coffee, and skim through these resources before going on:
+I expect you, dear reader, to be somewhat interested in AI if you're still here. NLP may not be your cup of tea though, and since following research trends requires time, you may also not be up to date. If that is the case, I would recommend you grab some coffee, and skim through these resources before going on:
 
 - [Attention is all you're need](https://arxiv.org/pdf/1706.03762.pdf): this research paper introduced the Transformer model architecture, arguably changing the whole landscape of NLP with it, as LSTMs did back in the day
 - [The Illustrated Transformer](http://jalammar.github.io/illustrated-transformer/): this post goes over the concepts presented in the above paper, it's a great resource to visualize how Transformer models work
@@ -94,8 +94,8 @@ y_2 = x_2 + G(y_1)
 And that's it, with this the layer is now reversible:
 
 {% katex display %}
-x_2 = G(y_1) - y_2\newline
-x_1 = F(x_2) - y_1
+x_2 = y_2 - G(y_1)\newline
+x_1 = y_1 - F(x_2)
 {% endkatex %}
 
 {% katexmm %}
