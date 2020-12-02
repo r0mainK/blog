@@ -19,40 +19,40 @@ As the paper is pretty math-heavy I'll let you review the proof to their claims 
 ### Faster attention
 
 {% katexmm %}
-As a reminder, let's go over how attention is computed. Given a sequence length $L$ and embedding dimension $d$, query, key and value matrices of dimension $(L,d)$ are somehow produced. In the case of _self-attention_ for instance, the input sequence is just mapped using linear layers. Denoting $q_n$, $k_n$ and $v_n$ the query, key and value vectors (of dimension $d$) for position $n$, then output for position $i$ is computed as follows:
+As a reminder, let's go over how attention is computed. Given a sequence length $L$ and embedding dimension $d$, query, key and value matrices of dimension $(L,d)$ are somehow produced. In the case of _self-attention_ for instance, the input sequence is just mapped using linear layers. Denoting $\mathbf{q}_n$, $\mathbf{k}_n$ and $\mathbf{v}_n$ the query, key and value vectors (of dimension $d$) for position $n$, then output for position $i$ is computed as follows:
 {% endkatexmm %}
 
 {% katex display %}
-Out_i = \sum_{j=1}^L \exp(\frac{q_i k_j^T}{\sqrt{d} \sum_{l=1}^L{q_i k_l^T}}) v_j
+\mathbf{Out}_i = \sum_{j=1}^L \frac{\exp(\dfrac{\mathbf{q}_i^T \mathbf{k}_j}{\sqrt{d}})}{ \sum_{l=1}^L\exp(\dfrac{\mathbf{q}_i^T \mathbf{k}_l}{\sqrt{d}})} \mathbf{v}_j
 {% endkatex %}
 
 {% katexmm %}
-For efficiency rows are compacted in matrices $Q$, $K$, $V$ of dimension $(L,d)$, so the output for all positions is computed in one go:
+For efficiency rows are compacted in matrices $\mathbf{Q}$, $\mathbf{K}$, $\mathbf{V}$ of dimension $(L,d)$, so the output for all positions is computed in one go:
 {% endkatexmm %}
 
 {% katex display %}
-A = \exp(\frac{QK^T}{\sqrt{d}})\quad
-D = diag(A\mathbf{1}_L)\quad
-Out = D^{-1}AV
+\mathbf{A} = \exp(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d}})\quad
+\mathbf{D} = diag(\mathbf{A}\mathbf{1}_L)\quad
+\mathbf{Out} = \mathbf{D}^{-1}\mathbf{A}\mathbf{V}
 {% endkatex %}
 
 {% katexmm %}
-The $O(L^2)$ complexity of attention comes from the product of the query and key matrices. To attenuate it, one possible way would be to split $A$ somehow, and avoid that multiplication. Well, that's exactly what the authors proposed, by transforming $Q$ and $K$ through _random feature maps_. I know, the name of this method seems a bit abstract ... but I promise it's not that hard to understand 🤞
+The $O(L^2)$ complexity of attention comes from the product of the query and key matrices. To attenuate it, one possible way would be to split $\mathbf{A}$ somehow, and avoid that multiplication. Well, that's exactly what the authors proposed, by transforming $\mathbf{Q}$ and $\mathbf{K}$ through _random feature maps_. I know, the name of this method seems a bit abstract ... but I promise it's not that hard to understand 🤞
 
-For the time being, let's assume such a feature map is applied to $Q$ and $K$, yielding $Q'$ and $V'$ of dimensions $(L,r)$. The computations can now be done in a different order, avoiding the quadratic complexity:
+For the time being, let's assume such a feature map is applied to $\mathbf{Q}$ and $\mathbf{K}$, yielding $\mathbf{Q}'$ and $\mathbf{K}'$ of dimensions $(L,r)$. The computations can now be done in a different order, avoiding the quadratic complexity:
 {% endkatexmm %}
 
 {% katex display %}
-D' = diag(Q'({K'}^T\mathbf{1}_L))\quad
-Out = {D'}^{-1} (Q'({K'}^TV))
+\mathbf{D}' = diag(\mathbf{Q}'({\mathbf{K}'}^T\mathbf{1}_L))\quad
+\mathbf{Out} = {\mathbf{D}'}^{-1} (\mathbf{Q}'({\mathbf{K}'}^T\mathbf{V}))
 {% endkatex %}
 
 {% katexmm %}
 If you're paying ... _attention_, you should see there's something off with this 🤔 Since the diagonal matrix has dimension $(L, L)$, and the second term has dimension $(L, d)$, the computation should still scale quadratically, right ? Not quite, although it isn't immediately clear why.
 
-When you multiply a matrix with a diagonal matrix, you're really just rescaling it, i.e. $[DX]_{i,j} = d_iX_{i,j}$. Although such an operation is not directly built into Pytorch, the [`torch.einsum`](https://pytorch.org/docs/stable/generated/torch.einsum.html) function can be used to create it - you don't even need to create the diagonal matrix, the diagonal itself is enough 🤗 
+When you multiply a matrix with a diagonal matrix, you're really just rescaling it, i.e. $[\mathbf{D}\mathbf{X}]_{i,j} = d_i\mathbf{X}_{i,j}$. Although such an operation is not directly built into Pytorch, the [`torch.einsum`](https://pytorch.org/docs/stable/generated/torch.einsum.html) function can be used to create it - you don't even need to create the diagonal matrix, the diagonal itself is enough 🤗 
 
-Here is how I implemented it, given $Q'$, $K'$ and $V$:
+Here is how I implemented it, given $\mathbf{Q}'$, $\mathbf{K}'$ and $\mathbf{V}$:
 {% endkatexmm %}
 
 ```python
@@ -74,11 +74,11 @@ Now, let's see how to use this, by talking a bit about ...
 ### Feature maps
 
 {% katexmm %}
-So what are these maps ? Well, dear reader, you might know of the [kernel trick](https://en.wikipedia.org/wiki/Kernel_method#Mathematics:_the_kernel_trick). Given a kernel function $\mathbf{k}: (\mathcal{X},\mathcal{X}) \rightarrow \mathbb{R}$ which verifies some properties, it states the existence of a feature map $\phi: \mathcal{X} \rightarrow \mathcal{V}$ for which:
+So what are these maps ? Well, dear reader, you might know of the [kernel trick](https://en.wikipedia.org/wiki/Kernel_method#Mathematics:_the_kernel_trick). Given a kernel function $K: (\mathcal{X},\mathcal{X}) \rightarrow \mathbb{R}$ which verifies some properties, it states the existence of a feature map $\phi: \mathcal{X} \rightarrow \mathcal{V}$ for which:
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) =  \langle \phi(\mathbf{x}), \phi(\mathbf{y}) \rangle_\mathcal{V}
+K(\mathbf{x}, \mathbf{y}) =  \langle \phi(\mathbf{x}), \phi(\mathbf{y}) \rangle_\mathcal{V}
 {% endkatex %}
 
 {% katexmm %}
@@ -88,35 +88,35 @@ Okay great, but what has this got to do with attention ? Well, notice that each 
 
 {% endkatexmm %}
 {% katex display %}
-A_{i,j} = \exp(\frac{q_i k_j^T}{\sqrt{d}}) =  \exp(\frac{q_i}{\sqrt{\sqrt{d}}}\frac{k_j^T}{\sqrt{\sqrt{d}}})  = \exp(\tilde{q_i}\tilde{k_j}^T) =  \mathbf{k}(\tilde{q_i}, \tilde{k_j})
+\mathbf{A}_{i,j} = \exp(\frac{\mathbf{q}_i^T \mathbf{k}_j}{\sqrt{d}}) =  \exp(\frac{\mathbf{q}_i^T}{\sqrt{\sqrt{d}}}\frac{\mathbf{k}_j}{\sqrt{\sqrt{d}}})  = \exp(\tilde{\mathbf{q}_i}^T\tilde{\mathbf{k}_j}) =  K(\tilde{\mathbf{q}_i}, \tilde{\mathbf{k}_j})
 {% endkatex %}
 
 {% katexmm %}
-With $\mathbf{k}: (\mathbb{R}^d,\mathbb{R}^d) \rightarrow \mathbb{R}$ the _softmax_ kernel and $\tilde{q_i}$, $\tilde{k_j}$ the renormalized query and keys. This kernel fulfills the conditions of the trick, so the feature maps exist. Now, as I said earlier the explicit representations of feature maps are never used, so as is this doesn't change much ... however, I left out a part of the story 😊
+With $K: (\mathbb{R}^d,\mathbb{R}^d) \rightarrow \mathbb{R}$ the _softmax_ kernel and $\tilde{\mathbf{q}_i}$, $\tilde{\mathbf{k}_j}$ the renormalized query and keys. This kernel fulfills the conditions of the trick, so the feature maps exist. Now, as I said earlier the explicit representations of feature maps are never used, so as is this doesn't change much ... however, I left out a part of the story 😊
 
-Coming back to SVMs, it turns out that even with the kernel trick, things weren't peachy. Take a classification problem with $N$ data points in dimension $d$. In order to evaluate the learned machine at a single point $\mathbf{x}$, one has to compute $f(\mathbf{x})=\sum_{i=1}^N c_i \mathbf{k}(\mathbf{x},\mathbf{x_i})$, where $c_i$ are learned parameters. This scales in $O(Nd)$, which is pretty bad for large datasets since you are going to evaluate the machine many times before getting to a solution.
+Coming back to SVMs, it turns out that even with the kernel trick, things weren't peachy. Take a classification problem with $N$ data points in dimension $d$. In order to evaluate the learned machine at a single point $\mathbf{x}$, one has to compute $f(\mathbf{x})=\sum_{i=1}^N c_i K(\mathbf{x},\mathbf{x_i})$, where $c_i$ are learned parameters. This scales in $O(Nd)$, which is pretty bad for large datasets since you are going to evaluate the machine many times before getting to a solution.
 
 To circumvent this issue, a novelty was proposed: instead of relying on the implicit mapping provided by the kernel trick, let's go one step further and directly approximate the inner product, by mapping points to a low dimensional space with a _randomized feature map_ $\mathbf{z}$:
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) =  \langle \phi(\mathbf{x}), \phi(\mathbf{y}) \rangle_\mathcal{V} \approx \mathbf{z}(\mathbf{x})\mathbf{z}(\mathbf{y})^T
+K(\mathbf{x}, \mathbf{y}) =  \langle \phi(\mathbf{x}), \phi(\mathbf{y}) \rangle_\mathcal{V} \approx \mathbf{z}(\mathbf{x})^T\mathbf{z}(\mathbf{y})
 {% endkatex %}
 
 {% katexmm %}
 And this solves the problem 👏 Indeed there is no more need to use a complex algorithm like SVM, since a linear algorithm applied to the transformed points can do the job: $f(\mathbf{x}) = \mathbf{W}^T\mathbf{z}(\mathbf{x})$ ! This may seem surprisingly simple, but it turns out this approach works great - given the right maps.
 
-With this in mind, you can imagine what the next step is: look into what exactly these random feature maps are, find one adequate to the problem, and use it to transform $Q$ and $K$ !
+With this in mind, you can imagine what the next step is: look into what exactly these random feature maps are, find one adequate to the problem, and use it to transform $\mathbf{Q}$ and $\mathbf{K}$ !
 {% endkatexmm %}
 
 #### **Random Fourier Features**
 
 {% katexmm %}
-In [the paper](http://www.cs.cornell.edu/selman/local/notes-new/pdf/2013_03_06_note_readings_randomization_vs_optimization_machine_learning_neural_nets_rahimi-recht-random-features.pdf) which first introduced theses concepts, the authors show that for certain kernels, you can use the [Fourier transform](https://en.wikipedia.org/wiki/Fourier_transform) to get a random feature map. If you think this is getting a bit complex ... well you're not wrong 😅 But no worries, it's not that hard to understand. The class of kernels for which their method works are shift-invariant positive-definite kernels:
+In [the paper](http://www.cs.cornell.edu/selman/local/notes-new/pdf/2013_03_06_note_readings_randomization_vs_optimization_machine_learning_neural_nets_rahimi-recht-random-features.pdf) which first introduced these concepts, the authors show that for certain kernels, you can use the [Fourier transform](https://en.wikipedia.org/wiki/Fourier_transform) to get a random feature map. If you think this is getting a bit complex ... well you're not wrong 😅 But no worries, it's not that hard to understand. The class of kernels for which their method works are shift-invariant positive-definite kernels:
 {% endkatexmm %}
 
 {% katex display %}
-\forall (\mathbf{x}, \mathbf{y}) \in \mathbb{R}^d, \quad \mathbf{k}(\mathbf{x}, \mathbf{y})=\mathbf{k}(\mathbf{x} - \mathbf{y}) \geq 0
+\forall (\mathbf{x}, \mathbf{y}) \in \mathbb{R}^d, \quad K(\mathbf{x}, \mathbf{y})=K(\mathbf{x} - \mathbf{y}) \geq 0
 {% endkatex %}
 
 {% katexmm %}
@@ -124,15 +124,19 @@ Since the kernel is shift-invariant it's only a function of one parameter, so it
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) = \mathbf{k}(\mathbf{x} - \mathbf{y}) = \int_{\mathbb{R}^d} \mathbf{p}(\omega)e^{j\omega^T(\mathbf{x} - \mathbf{y})}d\omega
+K(\mathbf{x}, \mathbf{y}) = K(\mathbf{x} - \mathbf{y}) = \int_{\mathbb{R}^d} \mathbf{p}(\omega)e^{j\omega^T(\mathbf{x} - \mathbf{y})}d\omega
 {% endkatex %}
 
 {% katexmm %}
-The main proposition backing their method up is Bochner's theorem wich states that such a kernel can be positive-definite if and only if its Fourier transform is a proper probability distribution. If $\mathcal{D}$ is said distribution, then since the kernel is real-valued:
+The main proposition backing their method up is Bochner's theorem which states that such a kernel can be positive-definite if and only if its Fourier transform is a proper probability distribution. If $\mathcal{D}$ is said distribution, then since the kernel is real-valued:
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) =  \int_{\mathcal{D}} e^{j\tilde{\omega}^T(\mathbf{x} - \mathbf{y})}d\tilde\omega = \mathbb{E}_{\omega \sim \mathcal{D}}[{e^{j\omega^T(\mathbf{x} - \mathbf{y})}}] = \mathbb{E}_{\omega \sim \mathcal{D}}[{\cos{\omega^T(\mathbf{x} - \mathbf{y})}}]
+\begin{aligned}
+K(\mathbf{x}, \mathbf{y}) &=  \int_{\mathcal{D}} e^{j\tilde{\omega}^T(\mathbf{x} - \mathbf{y})}d\tilde\omega \\
+&= \mathbb{E}_{\omega \sim \mathcal{D}}[{e^{j\omega^T(\mathbf{x} - \mathbf{y})}}] \\
+&= \mathbb{E}_{\omega \sim \mathcal{D}}[{\cos{\omega^T(\mathbf{x} - \mathbf{y})}}]
+\end{aligned}
 {% endkatex %}
 
 {% katexmm %}
@@ -140,7 +144,9 @@ With $z_\omega(\mathbf{x}) = [\cos \omega^T \mathbf{x}, \sin \omega^T \mathbf{x}
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) = \mathbb{E}_{\omega \sim \mathcal{D}}[z_\omega(\mathbf{x})z_\omega(\mathbf{y})^T]
+\begin{aligned}
+K(\mathbf{x}, \mathbf{y}) &= \mathbb{E}_{\omega \sim \mathcal{D}}[\cos \omega^T \mathbf{x} \cos \omega^T \mathbf{y} + \sin\omega^T \mathbf{x} \sin \omega^T \mathbf{y}] \\ &= \mathbb{E}_{\omega \sim \mathcal{D}}[z_\omega(\mathbf{x})^Tz_\omega(\mathbf{y})^T]
+\end{aligned}
 {% endkatex %}
 
 {% katexmm %}
@@ -148,7 +154,7 @@ The kernel can now be approximated by simply sampling $\omega$ from $\mathcal{D}
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) \approx \mathbf{z}(\mathbf{x}) \mathbf{z}(\mathbf{y})^T =  \frac{1}{m}\sum_{i=1}^m \cos \omega_i^T (\mathbf{x} - \mathbf{y})
+K(\mathbf{x}, \mathbf{y}) \approx \mathbf{z}(\mathbf{x})^T \mathbf{z}(\mathbf{y}) =  \frac{1}{m}\sum_{i=1}^m \cos \omega_i^T (\mathbf{x} - \mathbf{y})
 {% endkatex %}
 
 {% katexmm %}
@@ -156,13 +162,13 @@ It turns out that the softmax kernel is both shift-invariant and positive-defini
 {% endkatexmm %}
 
 {% katex display %}
-\lVert \mathbf{x} - \mathbf{y} \rVert^2 = \lVert \mathbf{x} \rVert ^2   + \lVert \mathbf{y} \rVert^2  - 2 \mathbf{x} \mathbf{y}^T
+\lVert \mathbf{x} - \mathbf{y} \rVert^2 = \lVert \mathbf{x} \rVert ^2   + \lVert \mathbf{y} \rVert^2  - 2 \mathbf{x}^T \mathbf{y}
 {% endkatex %}
 
 The softmax kernel can be rewritten as function of the Gaussian kernel, which is also shift-invariant and positive-definite:
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) = \exp(\mathbf{x} \mathbf{y}^T)= \exp(\frac{\lVert \mathbf{x} \rVert ^2}{2})\mathbf{k}_{gauss}(\mathbf{x}, \mathbf{y})\exp(\frac{\lVert \mathbf{y} \rVert^2 }{2})
+K(\mathbf{x}, \mathbf{y}) = \exp(\mathbf{x}^T \mathbf{y})= \exp(\frac{\lVert \mathbf{x} \rVert ^2}{2})K_{gauss}(\mathbf{x}, \mathbf{y})\exp(\frac{\lVert \mathbf{y} \rVert^2 }{2})
 {% endkatex %}
 
 {% katexmm %}
@@ -170,7 +176,7 @@ It's well known that the Fourier transform of a Gaussian is a Gaussian ... which
 {% endkatexmm %}
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) \approx \exp(\frac{\lVert \mathbf{x} \rVert ^2}{2})\mathbf{z}(\mathbf{x}) \mathbf{z}(\mathbf{y})^T)\exp(\frac{\lVert \mathbf{y} \rVert^2 }{2}) = \tilde{\mathbf{z}}(\mathbf{x})\tilde{\mathbf{z}}(\mathbf{y})^T
+K(\mathbf{x}, \mathbf{y}) \approx \exp(\frac{\lVert \mathbf{x} \rVert ^2}{2})\mathbf{z}(\mathbf{x})^T \mathbf{z}(\mathbf{y}))\exp(\frac{\lVert \mathbf{y} \rVert^2 }{2}) = \tilde{\mathbf{z}}(\mathbf{x})^T\tilde{\mathbf{z}}(\mathbf{y})
 {% endkatex %}
 
 Now all that's left to approximate attention is to implement this 🥳 
@@ -187,13 +193,13 @@ While everything that I described in the previous section is true, and should he
 This lead the authors to introduce **positive** random features. How did they do it ? Well, I won't cover everything as the proof is included in the paper, but the process is similar to what was done in the previous section. Using the following identity:
 
 {% katex display %}
-\lVert \mathbf{x} + \mathbf{y} \rVert^2 = \lVert \mathbf{x} \rVert ^2   + \lVert \mathbf{y} \rVert^2  + 2 \mathbf{x} \mathbf{y}^T
+\lVert \mathbf{x} + \mathbf{y} \rVert^2 = \lVert \mathbf{x} \rVert ^2   + \lVert \mathbf{y} \rVert^2  + 2 \mathbf{x}^T \mathbf{y}
 {% endkatex %}
 
 The softmax kernel can be rewritten as:
 
 {% katex display %}
-\mathbf{k}(\mathbf{x}, \mathbf{y}) = \exp(-\frac{\lVert \mathbf{x} \rVert ^2}{2})\exp(\frac{\lVert \mathbf{x} + \mathbf{y} \rVert^2}{2})\exp(-\frac{\lVert \mathbf{y} \rVert^2 }{2})
+K(\mathbf{x}, \mathbf{y}) = \exp(-\frac{\lVert \mathbf{x} \rVert ^2}{2})\exp(\frac{\lVert \mathbf{x} + \mathbf{y} \rVert^2}{2})\exp(-\frac{\lVert \mathbf{y} \rVert^2 }{2})
 {% endkatex %}
 
 This is where things change. The middle term is obviously not shift-invariant, so the Fourier transform can't be used here. However, the authors were able to prove that:
@@ -247,8 +253,8 @@ def apply_hyperbolic_feature_map(x, orf, epsilon=1e-6):
 {% katexmm %}
 So, a couple things:
 - the embedding dimension is named $d_k$ because attention will be done via multiple heads, _more on that soon_
-- in both cases the input is renormalized by $d_k^{-\frac{1}{4}}$, not $d_k^{-\frac{1}{2}}$, since the renormalization is done on both keys and queries
-- as in the released code, a small $\epsilon$ is added for stability
+- as I explained earlier the input is renormalized by $d_k^{-\frac{1}{4}}$
+- mimicking the released Jax code, a small $\epsilon$ is added for stability
 
 There are still some things to address, but the hard-lifting is now done 😎 Before moving on though, I'd like to point one last thing.
 
@@ -264,16 +270,16 @@ As I mentioned, there are still some details that need to be covered. Let's star
 It turns out that an additional way to increase the quality of the approximation is by having the sampled random vectors that form an orthogonal base, i.e. if:
 
 {% katex display %}
-\forall (i,j), \quad \omega_i \omega_j^T = \mathbf{1}_{i=j}
+\forall (i,j), \quad \omega_i^T \omega_j = \mathbf{1}_{i=j}
 {% endkatex %}
 
 {% katexmm %}
-To do so, the method presented in [this paper](https://arxiv.org/pdf/1610.09072v1.pdf) can be employed. It relies on [QR decomposition](https://en.wikipedia.org/wiki/QR_decomposition), in which a square matrix is decomposed in an orthogonal matrix $Q$ and an upper triangular matrix $R$. Given that the matrix of random features $\Omega$ is of dimension $(m, d)$, the decomposition may not be possible if $m \neq d$. In that case:
+To do so, the method presented in [this paper](https://arxiv.org/pdf/1610.09072v1.pdf) can be employed. It relies on [QR decomposition](https://en.wikipedia.org/wiki/QR_decomposition), in which a square matrix is decomposed in an orthogonal matrix $\mathbf{Q}$ and an upper triangular matrix $\mathbf{R}$. Given that the matrix of random features $\Omega$ is of dimension $(m, d)$, the decomposition may not be possible if $m \neq d$. In that case:
 
 - if $d > m$ then more vectors are sampled to get to $d$
 - if $d < m$ then the matrix is divided into $k$ blocks $\Omega_k$ of dimensions $(d,d)$, and if the last block is too small more vectors are sampled
 
-Afterwords each block is decomposed and the orthogonal matrices $Q_k$ are concatenated. According to the authors of this method, the resulting matrix should still be orthogonal with high probability. However, the rows obtained after QR-decomposition have unit-norm while the ones sampled from a normal distribution follow a $\chi$-distribution, so the matrix needs to be rescaled. It's a pretty simple procedure, as the sum of squared normal random vectors also follow that distribution. 
+Afterwords each block is decomposed and the orthogonal matrices $\mathbf{Q}_k$ are concatenated. According to the authors of this method, the resulting matrix should still be orthogonal with high probability. However, the rows obtained after QR-decomposition have unit-norm while the ones sampled from a normal distribution follow a $\chi$-distribution, so the matrix needs to be rescaled. It's a pretty simple procedure, as the sum of squared normal random vectors also follow that distribution. 
 
 Here is my implementation of the whole process (I reused the `apply_scaling` function defined previously):
 
